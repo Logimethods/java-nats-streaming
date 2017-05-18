@@ -7,8 +7,8 @@
 package io.nats.streaming;
 
 import io.nats.streaming.protobuf.StartPosition;
-import io.nats.streaming.protobuf.SubscriptionOptionsMsg;
 
+import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
@@ -49,7 +49,7 @@ public class SubscriptionOptions {
         this.startTime = builder.startTime;
         this.manualAcks = builder.manualAcks;
     }
-    
+
     private SubscriptionOptions(SubscriptionOptionsMsg optionsMsg) {
         this.durableName = optionsMsg.getDurableName();
         this.maxInFlight = optionsMsg.getMaxInFlight();
@@ -57,7 +57,7 @@ public class SubscriptionOptions {
         this.startAt = optionsMsg.getStartAt();
         this.startSequence = optionsMsg.getStartSequence();
         this.startTime = Instant.ofEpochMilli(optionsMsg.getStartTime());
-        this.manualAcks = optionsMsg.getManualAcks();    	
+        this.manualAcks = optionsMsg.getManualAcks();
     }
 
     /**
@@ -142,8 +142,10 @@ public class SubscriptionOptions {
     /**
      * A Builder implementation for creating an immutable {@code SubscriptionOptions} object.
      */
-    public static final class Builder {
-        String durableName;
+    public static final class Builder implements Serializable {
+        private static final long serialVersionUID = 1476017376308805473L;
+
+		String durableName;
         int maxInFlight = SubscriptionImpl.DEFAULT_MAX_IN_FLIGHT;
         Duration ackWait = Duration.ofMillis(SubscriptionImpl.DEFAULT_ACK_WAIT);
         StartPosition startAt = StartPosition.NewOnly;
@@ -348,7 +350,7 @@ public class SubscriptionOptions {
         public SubscriptionOptions build() {
             return new SubscriptionOptions(this);
         }
-        
+
         /**
          * Creates a {@link SubscriptionOptions} instance based on the provided {@link SubscriptionOptionsMsg} configuration.
          *
@@ -357,7 +359,7 @@ public class SubscriptionOptions {
         public static SubscriptionOptions build(SubscriptionOptionsMsg optionsMsg) {
             return new SubscriptionOptions(optionsMsg);
         }
-               
+
         /**
          * Creates a {@link SubscriptionOptionsMsg} instance based on the provided configuration.
          *
@@ -376,4 +378,3 @@ public class SubscriptionOptions {
         }
     }
 }
-
