@@ -7,6 +7,8 @@
 package io.nats.streaming;
 
 import io.nats.streaming.protobuf.StartPosition;
+
+import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
