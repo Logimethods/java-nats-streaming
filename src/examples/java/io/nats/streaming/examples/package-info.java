@@ -11,16 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package io.nats.streaming;
-
 /**
- * A MessageHandler object is used as a callback to receive asynchronously delivered messages.
+ * 
  */
-public interface MessageHandler {
-    /**
-     * Passes a message to the handler.
-     * 
-     * @param msg - the received Message that triggered the callback invocation.
-     */
-    void onMessage(io.nats.streaming.Message msg);
-}
+/**
+ * @author larry
+ *
+ */
+package io.nats.streaming.examples;

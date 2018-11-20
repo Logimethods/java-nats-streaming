@@ -1,8 +1,15 @@
-/*
- *  Copyright (c) 2015-2016 Apcera Inc. All rights reserved. This program and the accompanying
- *  materials are made available under the terms of the MIT License (MIT) which accompanies this
- *  distribution, and is available at http://opensource.org/licenses/MIT
- */
+// Copyright 2015-2018 The NATS Authors
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at:
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package io.nats.streaming;
 
@@ -13,10 +20,10 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * A {@code StreamingConnectionFactory} object encapsulates a set of connection configuration
- * options. A client uses it to create a connection to the STAN streaming data system.
+ * options. A client uses it to create a connection to the NATS streaming data system.
  */
-class StreamingConnectionFactory {
-    private Duration ackTimeout = Duration.ofMillis(SubscriptionImpl.DEFAULT_ACK_WAIT);
+public class StreamingConnectionFactory {
+    private Duration ackTimeout = SubscriptionOptions.DEFAULT_ACK_WAIT;
     private Duration connectTimeout = Duration.ofSeconds(NatsStreaming
             .DEFAULT_CONNECT_WAIT);
     private String discoverPrefix = NatsStreaming.DEFAULT_DISCOVER_PREFIX;
@@ -43,7 +50,9 @@ class StreamingConnectionFactory {
      *                              be established
      */
     public StreamingConnection createConnection() throws IOException, InterruptedException {
-        return new StreamingConnectionImpl(clusterId, clientId, options()).connect();
+        StreamingConnectionImpl conn = new StreamingConnectionImpl(clusterId, clientId, options());
+        conn.connect();
+        return conn;
     }
 
     Options options() {
@@ -119,7 +128,7 @@ class StreamingConnectionFactory {
     }
 
     /**
-     * Sets the discover prefix string that is used to establish a STAN session.
+     * Sets the discover prefix string that is used to establish a nats streaming session.
      *
      * @param discoverPrefix the discoverPrefix to set
      */
@@ -192,16 +201,16 @@ class StreamingConnectionFactory {
 
 
     /**
-     * Returns the client ID of the current STAN session.
+     * Returns the client ID of the current NATS streaming session.
      *
-     * @return the client ID of the current STAN session
+     * @return the client ID of the current NATS streaming session
      */
     public String getClientId() {
         return clientId;
     }
 
     /**
-     * Sets the client ID for the current STAN session.
+     * Sets the client ID for the current NATS streaming session.
      *
      * @param clientId the clientId to set
      */
@@ -213,7 +222,7 @@ class StreamingConnectionFactory {
     }
 
     /**
-     * Returns the cluster ID of the current STAN session.
+     * Returns the cluster ID of the current NATS streaming session.
      *
      * @return the clusterId
      */
@@ -222,7 +231,7 @@ class StreamingConnectionFactory {
     }
 
     /**
-     * Sets the cluster ID of the current STAN session.
+     * Sets the cluster ID of the current NATS streaming session.
      *
      * @param clusterId the clusterId to set
      */

@@ -1,28 +1,85 @@
-![](https://raw.githubusercontent.com/nats-io/nats-site/master/src/img/large-logo.png)
-# NATS Streaming Java Client
-NATS Streaming is an extremely performant, lightweight reliable streaming platform powered by NATS.
+![NATS](src/main/javadoc/images/large-logo.png)
 
-[![License MIT](https://img.shields.io/npm/l/express.svg)](http://opensource.org/licenses/MIT)
-[![Build Status](https://travis-ci.org/nats-io/java-nats-streaming.svg?branch=master)](http://travis-ci.org/nats-io/java-nats-streaming)
-[![Coverage Status](https://coveralls.io/repos/github/nats-io/java-nats-streaming/badge.svg?branch=master&t=YxbrCO)](https://coveralls.io/github/nats-io/java-nats-streaming?branch=master)
+# NATS - Streaming Java Client
+
+A [Java](http://java.com) client for the [NATS streaming platform](https://nats.io).
+
+[![License Apache 2.0](https://img.shields.io/badge/License-Apache2-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
+[![Build Status](https://travis-ci.org/nats-io/java-nats-streaming.svg?branch=master)](http://travis-ci.org/nats-io/java-nats-streaming?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/nats-io/java-nats-streaming/badge.svg?branch=master)](https://coveralls.io/github/nats-io/java-nats-streaming?branch=master)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.nats/java-nats-streaming/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.nats/java-nats-streaming)
 [![Javadoc](http://javadoc.io/badge/io.nats/java-nats-streaming.svg)](http://javadoc.io/doc/io.nats/java-nats-streaming)
 
-[![Dependency Status](https://www.versioneye.com/user/projects/57c07fd1968d6400336022f2/badge.svg?style=flat-square)](https://www.versioneye.com/user/projects/57c07fd1968d6400336022f2)
-[![Reference Status](https://www.versioneye.com/java/io.nats:java-nats-streaming/reference_badge.svg?style=flat-square)](https://www.versioneye.com/java/io.nats:java-nats-streaming/references)
+## A Note on Versions
+
+This is version 2.1 of the Java NATS streaming library. This version is a minor port to version 2.1 of the Java NATS library, but contains breaking changes due to the way the underlying library handles exceptions, especially timeouts.
+
+The new version minimizes threads. Only one thread is used for all callbacks, by relying on a dispatcher in the underlying NATS connection. If you want to deliver in multiple threads, you can use multiple StreamingConnections on the same underlying NATS connection. This reduces total thread usage while allowing callbacks to work independently. See [Sharing A NATS Connection](#sharing-a-nats-connection).
+
+One big change is the move to gradle, and away from maven, as with the NATS library. Please see the instructions below for [Building From Source](#building-from-source). The maven artifacts are still available in the same place, so should be usable without changing your application build files.
+
+Previous versions are still available in the repo.
 
 ## Installation
 
-### Maven Central
+The nats streaming client requires two jar files to run, the java nats library and the streaming library. See [Building From Source](#building-from-source) for details on building the library.
 
-#### Releases
+### Downloading the Jar
 
-Current stable release (click for pom info): [![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.nats/java-nats-streaming/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.nats/java-nats-streaming)
+You can download the latest NATS client jar at [https://search.maven.org/remotecontent?filepath=io/nats/jnats/2.1.0/jnats-2.1.0.jar](https://search.maven.org/remotecontent?filepath=io/nats/jnats/2.0.1/jnats-2.0.1.jar).
 
-#### Snapshots
+You can download the latest java nats streaming jar at [https://search.maven.org/remotecontent?filepath=io/nats/java-nats-streaming/2.1.0/java-nats-streaming-2.1.0.jar](https://search.maven.org/remotecontent?filepath=io/nats/java-nats-streaming/2.1.0/java-nats-streaming-2.1.0.jar).
 
-Snapshot releases from the current `master` branch are uploaded to Sonatype OSSRH (OSS Repository Hosting) with each successful Travis CI build. 
-If you don't already have your pom.xml configured for using Maven snapshots, you'll need to add the following repository to your pom.xml:
+### Using Gradle
+
+The NATS client is available in the Maven central repository, and can be imported as a standard dependency in your `build.gradle` file:
+
+```groovy
+dependencies {
+    implementation 'io.nats:java-nats-streaming:2.1.0'
+}
+```
+
+If you need the latest and greatest before Maven central updates, you can use:
+
+```groovy
+repositories {
+    mavenCentral()
+    maven {
+        url "https://oss.sonatype.org/content/repositories/releases"
+    }
+    maven {
+        url "https://oss.sonatype.org/content/repositories/snapshots"
+    }
+}
+```
+
+### Using Maven
+
+The NATS client is available on the Maven central repository, and can be imported as a normal dependency in your pom.xml file:
+
+```xml
+<dependency>
+    <groupId>io.nats</groupId>
+    <artifactId>java-nats-streaming</artifactId>
+    <version>2.1.0</version>
+</dependency>
+```
+
+If you need the absolute latest, before it propagates to maven central, you can use the repository:
+
+```xml
+<repositories>
+    <repository>
+        <id>latest-repo</id>
+        <url>https://oss.sonatype.org/content/repositories/releases</url>
+        <releases><enabled>true</enabled></releases>
+        <snapshots><enabled>false</enabled></snapshots>
+    </repository>
+</repositories>
+```
+
+For snapshot releases, you'll need to add the following repository to your pom.xml:
 
 ```xml
 <profiles>
@@ -41,24 +98,10 @@ If you don't already have your pom.xml configured for using Maven snapshots, you
 </profiles>
 
 ```
-#### Building from source code (this repository)
-First, download and install the parent POM:
-```
-git clone git@github.com:nats-io/nats-parent-pom.git
-cd nats-parent-pom
-mvn install
-```
 
-Now clone, compile, and install in your local maven repository (or copy the artifacts from the `target/` directory to wherever you need them):
-```
-git clone git@github.com:/nats-io/java-nats-streaming.git
-cd java-nats-streaming
-mvn install
-```
+### Linux Platform Note
 
-## Platform Notes
-### Linux
-We use RNG to generate unique inbox names. A peculiarity of the JDK on Linux (see [JDK-6202721] (https://bugs.openjdk.java.net/browse/JDK-6202721) and [JDK-6521844](https://bugs.openjdk.java.net/browse/JDK-6521844)) causes Java to use `/dev/random` even when `/dev/urandom` is called for. The net effect on java-nats-streaming is that client connection startup will be very slow. The standard workaround is to add this to your JVM options:
+NATS uses RNG to generate unique inbox names. A peculiarity of the JDK on Linux (see [JDK-6202721](https://bugs.openjdk.java.net/browse/JDK-6202721) and [JDK-6521844](https://bugs.openjdk.java.net/browse/JDK-6521844)) causes Java to use `/dev/random` even when `/dev/urandom` is called for. The net effect is that successive calls to `newInbox()`, either directly or through calling `request()` will become very slow, on the order of seconds, making many applications unusable if the issue is not addressed. A simple workaround would be to use the following jvm args.
 
 `-Djava.security.egd=file:/dev/./urandom`
 
@@ -66,37 +109,45 @@ We use RNG to generate unique inbox names. A peculiarity of the JDK on Linux (se
 
 ```java
 
-ConnectionFactory cf = new ConnectionFactory(clusterID, clientID);
-Connection sc = cf.createConnection();
+// Create a connection factory
+StreamingConnectionFactory cf = new StreamingConnectionFactory("test-cluster", "bar");
 
-// Simple Synchronous Publisher
-sc.publish("foo", "Hello World".getBytes()); // does not return until an ack has been received from NATS Streaming server
+// A StreamingConnection is a logical connection to the NATS streaming
+// server.  This API creates an underlying core NATS connection for
+// convenience and simplicity.  In most cases one would create a secure
+// core NATS connection and pass it in via
+// StreamingConnectionFactory.setNatsConnection(Connection nc)
+StreamingConnection sc = cf.createConnection();
 
-// use latch to await delivery of message before shutting down
-CountDownLatch latch = new CountDownLatch(1); 
+// This simple synchronous publish API blocks until an acknowledgement
+// is returned from the server.  If no exception is thrown, the message
+// has been stored in NATS streaming.
+sc.publish("foo", "Hello World".getBytes());
 
-// Simple Async Subscriber
+// Use a countdown latch to wait for our subscriber to receive the
+// message we published above.
+final CountDownLatch doneSignal = new CountDownLatch(1);
+
+// Simple Async Subscriber that retrieves all available messages.
 Subscription sub = sc.subscribe("foo", new MessageHandler() {
-  public void onMessage(Message m) {
-    latch.countDown();
-    System.out.printf("Received a message: %s\n", new String(m.getData()));
-  }
+    public void onMessage(Message m) {
+        System.out.printf("Received a message: %s\n", new String(m.getData()));
+        doneSignal.countDown();
+    }
 }, new SubscriptionOptions.Builder().deliverAllAvailable().build());
 
-// pause until message delivered 
-latch.await();
+doneSignal.await();
 
-// Unsubscribe
+// Unsubscribe to clean up
 sub.unsubscribe();
 
-// Close connection
+// Close the logical connection to NATS streaming
 sc.close();
 ```
 
-### Subscription Start (i.e. Replay) Options 
+### Subscription Start (i.e. Replay) Options
 
-NATS Streaming subscriptions are similar to NATS subscriptions, but clients may start their subscription at an earlier point in the message stream, allowing them to receive messages that were published before this client registered interest. 
-The options are described with examples below:
+NATS Streaming subscriptions are similar to NATS subscriptions, but clients may start their subscription at an earlier point in the message stream, allowing them to receive messages that were published before this client registered interest. The options are described with examples below:
 
 ```java
 
@@ -140,35 +191,33 @@ sc.subscribe("foo", new MessageHandler() {
 
 ### Durable Subscriptions
 
-Replay of messages offers great flexibility for clients wishing to begin processing at some earlier point in the data stream. 
-However, some clients just need to pick up where they left off from an earlier session, without having to manually track their position in the stream of messages. 
-Durable subscriptions allow clients to assign a durable name to a subscription when it is created. 
-Doing this causes the NATS Streaming server to track the last acknowledged message for that clientID + durable name, so that only messages since the last acknowledged message will be delivered to the client.
+Replay of messages offers great flexibility for clients wishing to begin processing at some earlier point in the data stream. However, some clients just need to pick up where they left off from an earlier session, without having to manually track their position in the stream of messages. Durable subscriptions allow clients to assign a durable name to a subscription when it is created. Doing this causes the NATS Streaming server to track the last acknowledged message for that clientID + durable name, so that only messages since the last acknowledged message will be delivered to the client.
 
 ```java
-Connection sc = new ConnectionFactory("test-cluster", "client-123").createConnection();
+StreamingConnection sc = new StreamingConnectionFactory("test-cluster", "client-123").createConnection();
 
-// Subscribe with durable name
+// Subscribe with a durable name
 sc.subscribe("foo", new MessageHandler() {
     public void onMessage(Message m) {
         System.out.printf("Received a message: %s\n", m.getData());
     }
-}, new SubscriptionOptions.Builder().setDurableName("my-durable"));
-...
-// client receives message sequence 1-40 
-...
-// client disconnects for an hour
-...
-// client reconnects with same clientID "client-123"
-sc = new ConnectionFactory("test-cluster", "client-123").createConnection();
+}, new SubscriptionOptions.Builder().durableName("my-durable").build());
+
+// The client receives message sequence 1-40, then disconnects.
+sc.close();
+
+// Meanwhile more messages are published to subject "foo"
+
+// Here the client reconnects with same clientID "client-123"
+sc = new StreamingConnectionFactory("test-cluster", "client-123").createConnection();
 
 // client re-subscribes to "foo" with same durable name "my-durable"
 sc.subscribe("foo", new MessageHandler() {
     public void onMessage(Message m) {
         System.out.printf("Received a message: %s\n", m.getData());
     }
-}, new SubscriptionOptions.Builder().setDurableName("my-durable"));
-...
+}, new SubscriptionOptions.Builder().durableName("my-durable").build());
+
 // client receives messages 41-current
 ```
 
@@ -176,7 +225,7 @@ sc.subscribe("foo", new MessageHandler() {
 
 NATS Streaming subscriptions **do not** support wildcards.
 
-## Advanced Usage 
+## Advanced Usage
 
 ### Asynchronous Publishing
 
@@ -185,117 +234,163 @@ The basic publish API (`Publish(subject, payload)`) is synchronous; it does not 
 Advanced users may wish to process these publish acknowledgements manually to achieve higher publish throughput by not waiting on individual acknowledgements during the publish operation. An asynchronous publish API is provided for this purpose:
 
 ```java
-    // will be invoked when a publish acknowledgement is received
-    AckHandler ackHandler = new AckHandler() { {
-        public void onAck(String ackedNuid, Exception err) {
-            if (err != null) {
-                log.error("Error publishing msg id %s: %s\n, ackedNuid, err.getMessage());
-            } else {
-                log.info("Received ack for msg id %s\n", ackedNuid);
-            }
+// The ack handler will be invoked when a publish acknowledgement is received
+AckHandler ackHandler = new AckHandler() {
+    public void onAck(String guid, Exception err) {
+        if (err != null) {
+            System.err.printf("Error publishing msg id %s: %s\n", guid, err.getMessage());
+        } else {
+            System.out.printf("Received ack for msg id %s\n", guid);
         }
     }
-    
-    // can also use publish(subj, replysubj, payload, ah)
-    String nuid = sc.publish("foo", "Hello World".getBytes(), ackHandler) // returns immediately
+};
+
+// This returns immediately.  The result of the publish can be handled in the ack handler.
+String guid = sc.publish("foo", "Hello World".getBytes(), ackHandler);
 ```
 
 ### Message Acknowledgements and Redelivery
 
-NATS Streaming offers At-Least-Once delivery semantics, meaning that once a message has been delivered to an eligible subscriber, if an acknowledgement is not received within the configured timeout interval, NATS Streaming will attempt redelivery of the message. 
-This timeout interval is specified by the subscription option `AckWait`, which defaults to 30 seconds.
+NATS Streaming offers At-Least-Once delivery semantics, meaning that once a message has been delivered to an eligible subscriber, if an acknowledgement is not received within the configured timeout interval, NATS Streaming will attempt redelivery of the message. This timeout interval is specified by the subscription option `AckWait`, which defaults to 30 seconds.
 
-By default, messages are automatically acknowledged by the NATS Streaming client library after the subscriber's message handler is invoked. However, there may be cases in which the subscribing client wishes to accelerate or defer acknowledgement of the message. 
-To do this, the client must set manual acknowledgement mode on the subscription, and invoke `Ack()` on the `Msg`. ex:
+By default, messages are automatically acknowledged by the NATS Streaming client library after the subscriber's message handler is invoked. However, there may be cases in which the subscribing client wishes to accelerate or defer acknowledgement of the message. To do this, the client must set manual acknowledgement mode on the subscription, and individually acknowledge messages.
+For example:
 
 ```java
 // Subscribe with manual ack mode, and set AckWait to 60 seconds
 sc.subscribe("foo", new MessageHandler() {
     public void onMessage(Message m) {
-        m.ack(); // ack message before performing I/O intensive operation
-        ...
         System.out.printf("Received a message: %s\n", m.getData());
+
+        // You must manually ack when manualAcks() are set.
+        try {
+            m.ack();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }, new SubscriptionOptions.Builder().setManualAcks(true), setAckWait(Duration.ofSeconds(60)));
 ```
 
 ## Rate limiting/matching
 
-A classic problem of publish-subscribe messaging is matching the rate of message producers with the rate of message consumers. 
-Message producers can often outpace the speed of the subscribers that are consuming their messages. 
-This mismatch is commonly called a "fast producer/slow consumer" problem, and may result in dramatic resource utilization spikes in the underlying messaging system as it tries to buffer messages until the slow consumer(s) can catch up.
+A classic problem of publish-subscribe messaging is matching the rate of message producers with the rate of message consumers. Message producers can often outpace the speed of the subscribers that are consuming their messages. This mismatch is commonly called a "fast producer/slow consumer" problem, and may result in dramatic resource utilization spikes in the underlying messaging system as it tries to buffer messages until the slow consumer(s) can catch up.
 
 ### Publisher rate limiting
 
 NATS Streaming provides a connection option called `MaxPubAcksInFlight` that effectively limits the number of unacknowledged messages that a publisher may have in-flight at any given time. When this maximum is reached, further `PublishAsync()` calls will block until the number of unacknowledged messages falls below the specified limit. ex:
 
 ```java
-ConnectionFactory cf = new ConnectionFactory(clusterID, clientID);
+StreamingConnectionFactory cf = new StreamingConnectionFactory("test-cluster", "client-123");
 cf.setMaxPubAcksInFlight(25);
-Connection sc = cf.createConnection();
 
-AckHandler ah = new MessageHandler() {
-    public void onAck(String nuid, Exception e) {
-      // process the ack
-      ...
+StreamingConnection sc = cf.createConnection();
+
+AckHandler ah = new AckHandler() {
+    public void onAck(String guid, Exception e) {
+        // process the ack
     }
-}
+};
 
 for (int i = 1; i < 1000; i++) {
-    // If the server is unable to keep up with the publisher, the number of oustanding acks will eventually 
+    // If the server is unable to keep up with the publisher, the number of oustanding acks will eventually
     // reach the max and this call will block
-    String guid = sc.publish("foo", "Hello World".getBytes(), ah); 
-}
+
+    String guid = sc.publish("foo", "Hello World".getBytes(), ah);
+    // track the guid in application code to resend, log, etc. if an error is identified in the ack handler.
 ```
 
 ### Subscriber rate limiting
 
-Rate limiting may also be accomplished on the subscriber side, on a per-subscription basis, using a subscription option called `MaxInFlight`. 
-This option specifies the maximum number of outstanding acknowledgements (messages that have been delivered but not acknowledged) that NATS Streaming will allow for a given subscription. 
-When this limit is reached, NATS Streaming will suspend delivery of messages to this subscription until the number of unacknowledged messages falls below the specified limit. ex:
+Rate limiting may also be accomplished on the subscriber side, on a per-subscription basis, using a subscription option called `MaxInFlight`. This option specifies the maximum number of outstanding acknowledgements (messages that have been delivered but not acknowledged) that NATS Streaming will allow for a given subscription. When this limit is reached, NATS Streaming will suspend delivery of messages to this subscription until the number of unacknowledged messages falls below the specified limit. ex:
 
 ```java
+
 // Subscribe with manual ack mode and a max in-flight limit of 25
-int i = 0;
 sc.subscribe("foo", new MessageHandler() {
     public void onMessage(Message m) {
-        System.out.printf("Received message #%d: %s\n", ++i, m.getData())
-        ...
-        // Does not ack, or takes a very long time to ack
-        ...
-        // Message delivery will suspend when the number of unacknowledged messages reaches 25
+        System.out.printf("Received message : %s\n", m.getData());
+
+        // You must manually ack when manualAcks() are set.  If acks fail or take too long,
+        // message delivery will suspend one the number of unacknowledged messages reaches 25
+        // due to the max in flight value.
+        try {
+            m.ack();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
-}, new SubscriptionOptions.Builder().setManualAcks(true).setMaxInFlight(25).build());
-
+}, new SubscriptionOptions.Builder().manualAcks().maxInFlight(25).build());
 ```
-## Logging
 
-This library logs error, warning, and debug information using the [Simple Logging Facade for Java (SLF4J)](www.slf4j.org) API. 
-This gives you, the downstream user, flexibility to choose which (if any) logging implementation you prefer.
-### Q: Hey, what the heck is this `Failed to load class org.slf4j.impl.StaticLoggerBinder` exception?". 
-A: You're getting that message because slf4j can't find an actual logger implementation in your classpath. 
-Carefully reading [the link embedded in those exception messages](http://www.slf4j.org/codes.html#StaticLoggerBinder) is highly recommended! 
+### Sharing A NATS Connection
+
+Under the covers, the StreamConnection has a NATS connection for all message transport. The connection creates a single Dispatcher for message callbacks. If you want to run callbacks in different threads, simply share an underlying NATS connection. The streaming connection doesn't create any other threads, modulo a timer, so this sharing has minimal thread overhead.
+
+```java
+Connection nc = Nats.connect(options));
+Options streamingOptions = new Options.Builder().natsConn(nc).build();
+StreamingConnection one = NatsStreaming.connect(clusterName, clientOne, streamingOptions);
+StreamingConnection two = NatsStreaming.connect(clusterName, clientTwo, streamingOptions);
+```
+
+You can reuse a connection from an existing streaming connection, but beware that closing the connection that created a NATS connection will close the NATS connection. For example, if you do:
+
+```java
+Options streamingOptions = new Options.Builder().natsUrl(srv.getURI()).build();
+StreamingConnection one = NatsStreaming.connect(clusterName, clientOne, streamingOptions));
+Options streamingOptionsTwo = new Options.Builder().natsConn(one.getNatsConnection()).build();
+StreamingConnection two = NatsStreaming.connect(clusterName, clientTwo, streamingOptionsTwo);
+```
+
+you have to close `two` before you close `one` to avoid an exception.
+
+### Controlling Callback Threads
+
+The underlying NATS library uses the concept of dispatchers to organize callback threads. You can leverage this feature in 2.1.0 or later of this
+library by setting a dispatcher name on your subscriptions.
+
+```java
+Subscription sub2 = sc.subscribe("foo", mcb2,
+                           new SubscriptionOptions.Builder().deliverAllAvailable().dispatcher("one").build());
+```
+
+## Building From Source
+
+The build depends on Gradle, and contains `gradlew` to simplify the process. After cloning, you can build the repository and run the tests with a single command:
+
+```bash
+> git clone https://github.com/nats-io/java-nats.git
+> cd java-nats
+> ./gradlew build
+```
+
+This will place the class files in a new `build` folder. To just build the jar:
+
+```bash
+> ./gradlew jar
+```
+
+The jar will be placed in `build/libs`.
+
+You can also build the java doc, and the samples jar using:
+
+```bash
+> ./gradlew javadoc
+> ./gradlew exampleJar
+```
+
+The java doc is located in `build/docs` and the example jar is in `build/libs`. Finally, to run the tests with the coverage report:
+
+```bash
+> ./gradlew test jacocoTestReport
+```
+
+which will create a folder called `build/reports/jacoco` containing the file `index.html` you can open and use to browse the coverage. Keep in mind we have focused on library test coverage, not coverage for the examples.
+
+Many of the tests run gnatsd on a custom port. If gnatsd is in your path they should just work, but in cases where it is not, or an IDE running tests has issues with the path you can specify the gnatsd location with the environment variable `gnatsd_path`.
 
 ## License
 
-(The MIT License)
-
-Copyright (c) 2012-2016 Apcera Inc.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to
-deal in the Software without restriction, including without limitation the
-rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-sell copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-IN THE SOFTWARE.
+Unless otherwise noted, the NATS source files are distributed
+under the Apache Version 2.0 license found in the LICENSE file.

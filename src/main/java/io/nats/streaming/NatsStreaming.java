@@ -1,22 +1,26 @@
-/*
- *  Copyright (c) 2015-2016 Apcera Inc. All rights reserved. This program and the accompanying
- *  materials are made available under the terms of the MIT License (MIT) which accompanies this
- *  distribution, and is available at http://opensource.org/licenses/MIT
- */
+// Copyright 2015-2018 The NATS Authors
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at:
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package io.nats.streaming;
 
 import java.io.IOException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public final class NatsStreaming {
-    static final Logger logger = LoggerFactory.getLogger(NatsStreaming.class);
-    static final String DEFAULT_NATS_URL = io.nats.client.Nats.DEFAULT_URL;
-    static final int DEFAULT_CONNECT_WAIT = 2; // Seconds
+    static final String DEFAULT_NATS_URL = io.nats.client.Options.DEFAULT_URL;
+    static final int DEFAULT_CONNECT_WAIT = 5; // Seconds
     static final String DEFAULT_DISCOVER_PREFIX = "_STAN.discover";
     static final String DEFAULT_ACK_PREFIX = "_STAN.acks";
-    static final int DEFAULT_MAX_PUB_ACKS_IN_FLIGHT = 2 ^ 14; // 16384
+    static final int DEFAULT_MAX_PUB_ACKS_IN_FLIGHT = 16384;
     static final String PFX = "stan: ";
     static final String ERR_CONNECTION_REQ_TIMEOUT = PFX + "connect request timeout";
     static final String ERR_CLOSE_REQ_TIMEOUT = PFX + "close request timeout";
@@ -83,7 +87,8 @@ public final class NatsStreaming {
             throws IOException, InterruptedException {
         try {
             StreamingConnectionImpl conn = new StreamingConnectionImpl(clusterId, clientId, opts);
-            return conn.connect();
+            conn.connect();
+            return conn;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return null;

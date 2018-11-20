@@ -1,8 +1,15 @@
-/*
- *  Copyright (c) 2015-2016 Apcera Inc. All rights reserved. This program and the accompanying
- *  materials are made available under the terms of the MIT License (MIT) which accompanies this
- *  distribution, and is available at http://opensource.org/licenses/MIT
- */
+// Copyright 2015-2018 The NATS Authors
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at:
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package io.nats.streaming;
 
@@ -13,15 +20,25 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A SubscriptionOptions object defines the configurable parameters of a STAN Subscription object.
  */
 public class SubscriptionOptions {
+    /**
+     * Default ack wait time for a subscriptions.
+     */
+    public static final Duration DEFAULT_ACK_WAIT = Duration.ofSeconds(30);
 
-    static final Logger logger = LoggerFactory.getLogger(SubscriptionOptions.class);
+    /**
+     * Default max messages in flight for a subscriptions.
+     */
+    public static final int DEFAULT_MAX_IN_FLIGHT = 1024;
+
+    /**
+     * Default time a connection will wait to create a subscription.
+     */
+    public static final Duration DEFAULT_SUBSCRIPTION_TIMEOUT = Duration.ofSeconds(2);
 
     // DurableName, if set will survive client restarts.
     private final String durableName;
@@ -37,6 +54,8 @@ public class SubscriptionOptions {
     private final Instant startTime;
     // Option to do Manual Acks
     private final boolean manualAcks;
+    private final Duration subscriptionTimeout;
+    private final String dispatcher;
 
     // Date startTimeAsDate;
 
@@ -48,6 +67,15 @@ public class SubscriptionOptions {
         this.startSequence = builder.startSequence;
         this.startTime = builder.startTime;
         this.manualAcks = builder.manualAcks;
+        this.subscriptionTimeout = builder.subscriptionTimeout;
+        this.dispatcher = builder.dispatcher;
+    }
+
+    /**
+     * @return the time to wait when creating a subscription if there is a network problem
+     */
+    public Duration getSubscriptionTimeout() {
+        return this.subscriptionTimeout;
     }
 
     /**
@@ -130,30 +158,76 @@ public class SubscriptionOptions {
     }
 
     /**
+     * Returns name of the dispatcher to use for this subscription. Can be null.
+     * If no dispatcher is provided in the options, a single dispatcher/thread is shared
+     * with other similarly configured subscriptions. By sharing dispatchers suscriptions
+     * can reduce the threads used in their application.
+     * 
+     * @return the dispatcher name for this subscription.
+     */
+    public String getDispatcherName() {
+        return dispatcher;
+    }
+
+    @java.lang.Override
+    public java.lang.String toString() {
+        return "SubscriptionOptions{" +
+          "durableName='" + durableName + '\'' +
+          ", maxInFlight=" + maxInFlight +
+          ", ackWait=" + ackWait +
+          ", startAt=" + startAt +
+          ", startSequence=" + startSequence +
+          ", startTime=" + startTime +
+          ", manualAcks=" + manualAcks +
+          '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        SubscriptionOptions that = (SubscriptionOptions) o;
+
+        if (maxInFlight != that.maxInFlight) return false;
+        if (startSequence != that.startSequence) return false;
+        if (manualAcks != that.manualAcks) return false;
+        if (durableName != null ? !durableName.equals(that.durableName) : that.durableName != null) return false;
+        if (ackWait != null ? !ackWait.equals(that.ackWait) : that.ackWait != null) return false;
+        if (startAt != that.startAt) return false;
+        if (dispatcher != that.dispatcher) return false;
+        return startTime != null ? startTime.equals(that.startTime) : that.startTime == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = durableName != null ? durableName.hashCode() : 0;
+        result = 31 * result + maxInFlight;
+        result = 31 * result + (ackWait != null ? ackWait.hashCode() : 0);
+        result = 31 * result + (startAt != null ? startAt.hashCode() : 0);
+        result = 31 * result + (int) (startSequence ^ (startSequence >>> 32));
+        result = 31 * result + (startTime != null ? startTime.getNano() : 0);
+        result = 31 * result + (dispatcher != null ? dispatcher.hashCode() : 0);
+        result = 31 * result + (manualAcks ? 1 : 0);
+        return result;
+    }
+
+    /**
      * A Builder implementation for creating an immutable {@code SubscriptionOptions} object.
      */
     public static final class Builder implements Serializable {
         private static final long serialVersionUID = 1476017376308805473L;
 
 		String durableName;
-        int maxInFlight = SubscriptionImpl.DEFAULT_MAX_IN_FLIGHT;
-        Duration ackWait = Duration.ofMillis(SubscriptionImpl.DEFAULT_ACK_WAIT);
+        int maxInFlight = SubscriptionOptions.DEFAULT_MAX_IN_FLIGHT;
+        Duration ackWait = SubscriptionOptions.DEFAULT_ACK_WAIT;
         StartPosition startAt = StartPosition.NewOnly;
         long startSequence;
         Instant startTime;
         boolean manualAcks;
         Date startTimeAsDate;
-
-        /**
-         * Sets the durable subscriber name for the subscription.
-         *
-         * @param durableName the name of the durable subscriber
-         * @return this
-         * @deprecated Use {@link #durableName(String)} instead
-         */
-        public Builder setDurableName(String durableName) {
-            return durableName(durableName);
-        }
+        String dispatcher;
+        Duration subscriptionTimeout = SubscriptionOptions.DEFAULT_SUBSCRIPTION_TIMEOUT;
 
         /**
          * Sets the durable subscriber name for the subscription.
@@ -169,17 +243,6 @@ public class SubscriptionOptions {
         /**
          * Sets the maximum number of in-flight (unacknowledged) messages for the subscription.
          *
-         * @param max maximum number of in-flight messages
-         * @return this
-         * @deprecated Use {@link #maxInFlight(int)} instead
-         */
-        public Builder setMaxInFlight(int max) {
-            return maxInFlight(max);
-        }
-
-        /**
-         * Sets the maximum number of in-flight (unacknowledged) messages for the subscription.
-         *
          * @param max the maximum number of in-flight messages
          * @return this
          */
@@ -189,26 +252,14 @@ public class SubscriptionOptions {
         }
 
         /**
-         * Sets the amount of time the subscription will wait for ACKs from the cluster.
+         * Sets the amount of time the subscription will wait during creation on a network failure.
          *
-         * @param ackWait the amount of time the subscription will wait for an ACK from the cluster
+         * @param timeout the amount of time the subscription will wait to be created
          * @return this
-         * @deprecated use {@link #ackWait(Duration)} instead
          */
-        public Builder setAckWait(Duration ackWait) {
-            return ackWait(ackWait);
-        }
-
-        /**
-         * Sets the amount of time the subscription will wait for ACKs from the cluster.
-         *
-         * @param ackWait the amount of time the subscription will wait for an ACK from the cluster
-         * @param unit    the time unit
-         * @return this
-         * @deprecated use {@link #ackWait(long, TimeUnit)} instead
-         */
-        public Builder setAckWait(long ackWait, TimeUnit unit) {
-            return ackWait(ackWait, unit);
+        public Builder subscriptionTimeout(Duration timeout) {
+            this.subscriptionTimeout = timeout;
+            return this;
         }
 
         /**
@@ -232,18 +283,6 @@ public class SubscriptionOptions {
         public Builder ackWait(long ackWait, TimeUnit unit) {
             this.ackWait = Duration.ofMillis(unit.toMillis(ackWait));
             return this;
-        }
-
-        /**
-         * Sets whether or not messages must be acknowledge individually by calling
-         * {@link Message#ack()}.
-         *
-         * @param manualAcks whether or not messages must be manually acknowledged
-         * @return this
-         * @deprecated use {@link #manualAcks()} instead
-         */
-        public Builder setManualAcks(boolean manualAcks) {
-            return manualAcks();
         }
 
         /**
@@ -329,6 +368,21 @@ public class SubscriptionOptions {
          */
         public Builder deliverAllAvailable() {
             this.startAt = StartPosition.First;
+            return this;
+        }
+
+        /**
+         * Specify a dispatcher for this subscription. Dispatchers are essentially a message queue
+         * and thread to handle callbacks. By sharing dispatchers an application can reduce thread resources.
+         * By splitting subscriptions between dispatchers it is possible to have multiple messages handled
+         * at the same time.
+         * 
+         * A unique dispatcher will be created automatically for each name. Reusing the name reuses the dispatcher.
+         * 
+         * @return this
+         */
+        public Builder dispatcher(String dispatcherName) {
+            this.dispatcher = dispatcherName;
             return this;
         }
 
